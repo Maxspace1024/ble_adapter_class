@@ -25,6 +25,11 @@ LowEnergyAdapter::LowEnergyAdapter(QObject *parent) : QObject(parent)
 }
 LowEnergyAdapter::~LowEnergyAdapter()
 {
+    if(controller!=nullptr)
+    {
+        delete controller;
+        controller=nullptr;
+    }
     delete agent;
     delete localDevice;
 }
