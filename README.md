@@ -39,7 +39,8 @@
 * 新增getCharacteristicProperties方法
 * 新增程式註解說明
 - [ ] characteristicChange()也需要emit SIGNAL, for the signal of `LowEnergyAdapter`
-  * 外部使用adapter的時候可以接收其signal
+  * 外部使用adapter的時候可以接收其SIGNAL
+  * 增加SIGNAL: `adapterCharacteristicChange(_,?)`
 
 ## 20220630凌晨
 * 目前搜尋Bluetooth Device

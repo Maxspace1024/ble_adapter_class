@@ -69,7 +69,7 @@ private slots:
     void onServiceCharacteristicWritten(QLowEnergyCharacteristic,QByteArray);
 
 signals:
-
+    void adapterCharacteristicChange(QLowEnergyService*,const QLowEnergyCharacteristic &);
 };
 
 #endif // LOWENERGYADAPTER_H

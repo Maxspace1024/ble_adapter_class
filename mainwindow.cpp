@@ -7,6 +7,12 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     adapter = new LowEnergyAdapter(this);
+    connect(
+        adapter,
+        SIGNAL(adapterCharacteristicChange(QLowEnergyService*,const QLowEnergyCharacteristic &)),
+        this,
+        SLOT(onAgentChChange(QLowEnergyService*,const QLowEnergyCharacteristic &))
+    );
 }
 
 MainWindow::~MainWindow()
@@ -101,3 +107,11 @@ void MainWindow::on_notifDisableBtn_clicked()
     );
 }
 
+void MainWindow::onAgentChChange(QLowEnergyService* serv,const QLowEnergyCharacteristic &c)
+{
+    qDebug() << "[SIGNAL_CATCH]\n"
+             << "serv:\t" << serv->serviceUuid().toString() << "\n"
+             << "charac:\t"<< c.uuid().toString()
+             << c.value().toHex() << "\n"
+             << "\n";
+}

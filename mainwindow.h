@@ -41,6 +41,7 @@ private slots:
 
     void on_notifDisableBtn_clicked();
 
+    void onAgentChChange(QLowEnergyService*,const QLowEnergyCharacteristic &);
 private:
     Ui::MainWindow *ui;
 };

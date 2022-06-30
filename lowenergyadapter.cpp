@@ -68,12 +68,12 @@ void LowEnergyAdapter::showDevices()
 
 void LowEnergyAdapter::connectToDevice(int index)
 {
-    //init the value of calculating the finished detail Scanning Service
-    detailFinishCount=0;
-
     //controller should be nullptr, means it is available to initialize
     if(0<= index && index < peripheralDevices.size() && controller == nullptr)
     {
+        //init the value of calculating the finished detail Scanning Service
+        detailFinishCount=0;
+
         //select peripheral device, and provide local device address info
         controller = QLowEnergyController::createCentral
         (
@@ -374,9 +374,11 @@ void LowEnergyAdapter::onServiceStateChange(QLowEnergyService::ServiceState newS
 }
 void LowEnergyAdapter::onServiceCharacteristicChange(QLowEnergyCharacteristic c,QByteArray val)
 {
-    qDebug()<< "[CH_CHANG]\t"
+    qDebug()<< "[CH_CHANG] "
             << c.uuid().toString()
             << ":" << val.toHex(' ');
+    QLowEnergyService* serv = findServiceOfCharacteristic(c.uuid().toString(QUuid::WithoutBraces));
+    emit adapterCharacteristicChange(serv,c);
 }
 void LowEnergyAdapter::onServiceCharacteristicRead(QLowEnergyCharacteristic c,QByteArray val)
 {
