@@ -2,6 +2,8 @@
 #define LOWENERGYADAPTER_H
 
 #include <QObject>
+#include <QLowEnergyService>
+#include <QLowEnergyCharacteristic>
 #include <QLowEnergyController>
 #include <QBluetoothLocalDevice>
 #include <QBluetoothDeviceDiscoveryAgent>
@@ -47,7 +49,7 @@ private:
     QBluetoothDeviceDiscoveryAgent* agent;
 
     QHash< QString , QLowEnergyService* > UUID2ParentService;
-    //QHash< QString , QLowEnergyCharacteristic > UUID2Charact;
+    QHash< QString , QLowEnergyCharacteristic > UUID2Charact;
 private slots:
     void onScanFinish();
     void onScanCancel();
