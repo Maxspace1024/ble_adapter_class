@@ -24,6 +24,14 @@
     ```
 
 ## 20220630晚上
+* 抓到戰犯
+  ```C
+  QList<QLowEnergyService*> Services;
+  QHash< QString , QLowEnergyService* > UUID2ParentService;
+  ```
+  * Qt container 的宣告為 const Key &, const T &
+  * template放pointer會有問題
+  * 可是說明文件有用pointer都可行??
 * 新增啟用Indication & Notification的方法
   * 需使用靜態函數`QLowEnergyCharacteristic::CCCDEnable*`
   * 可以固定收到Sensor回傳的數值
@@ -66,3 +74,7 @@
 * WRITE_btn 需寫入長度相同的ByteArray & READ_btn 的讀取限制
   - [ ] 尚未完成Service詳細掃描前，此功能無效
   - [ ] 有write_respone的欄位需要增加
+* Hash member 會出現heap動態記憶體位置問題
+  ```
+  HEAP[bledevclass.exe]: Heap block at 000002857A9DC500 modified at 000002857A9DC5CC past requested size of bc
+  ```
