@@ -28,6 +28,7 @@ public:
     // the I/O of Characteristic
     QLowEnergyCharacteristic::PropertyTypes getCharacteristicProperties(const QString &);
     QLowEnergyService* findServiceOfCharacteristic(const QString &);
+    QLowEnergyCharacteristic findCharacteristicObject(const QString &);
     QString readCharacteristic(const QString &);
     void writeCharacteristic(const QString &,const QByteArray &);
     void enableCharacteristicNotification(const QString &,bool);

@@ -24,14 +24,14 @@
     ```
 
 ## 20220630晚上
-* 抓到戰犯
+* 抓到戰犯，記得匯入標頭
   ```C
+  #include <QLowEnergyService>
+  #include <QLowEnergyCharacteristic>
+
   QList<QLowEnergyService*> Services;
   QHash< QString , QLowEnergyService* > UUID2ParentService;
   ```
-  * Qt container 的宣告為 const Key &, const T &
-  * template放pointer會有問題
-  * 可是說明文件有用pointer都可行??
 * 新增啟用Indication & Notification的方法
   * 需使用靜態函數`QLowEnergyCharacteristic::CCCDEnable*`
   * 可以固定收到Sensor回傳的數值
@@ -39,6 +39,7 @@
 * 新增getCharacteristicProperties方法
 * 新增程式註解說明
 - [ ] characteristicChange()也需要emit SIGNAL, for the signal of `LowEnergyAdapter`
+  * 外部使用adapter的時候可以接收其signal
 
 ## 20220630凌晨
 * 目前搜尋Bluetooth Device
@@ -55,7 +56,7 @@
   * 這應該不是個好方法，在stateChange中可能還會發生其他狀態
   * 這些"其他狀態"還沒有處理的方法與步驟
   * 如果某個Service細節搜尋持續出錯的話?...
-- [ ] 改進以下搜尋方式，線性匹配Characteristic太糟糕了
+- [X] 改進以下搜尋方式，線性匹配Characteristic太糟糕了
   * 快速的在Service中，找到目標Characteristic
   * 前面嘗試`QHash<QString uuid, QLowEnergyCharacteristic c> hash`，導致heap空間有問題所以放棄
     ```C++

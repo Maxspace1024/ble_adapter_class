@@ -109,7 +109,7 @@ void LowEnergyAdapter::disconnectFromDevice()
     {
         //hash
         UUID2ParentService.clear();
-        //UUID2Charact.clear();
+        UUID2Charact.clear();
 
         for(auto &s : Services)
         {
@@ -136,112 +136,112 @@ void LowEnergyAdapter::disconnectFromDevice()
 QLowEnergyCharacteristic::PropertyTypes LowEnergyAdapter::getCharacteristicProperties(const QString &uuid)
 {
     QLowEnergyService* serv = findServiceOfCharacteristic(uuid);
+    QLowEnergyCharacteristic c = findCharacteristicObject(uuid);
 
-    for(auto& c : serv->characteristics())
+    if(c.uuid().toString(QUuid::WithoutBraces) != "00000000-0000-0000-0000-000000000000")
+        return c.properties();
+    else
     {
-        if(c.uuid().toString(QUuid::WithoutBraces) == uuid)
-            return c.properties();
+        qDebug() << "[Property]\tUnknown";
+        return QLowEnergyCharacteristic::Unknown;
     }
-
-    qDebug() << "[Property]\tUnknown";
-    return QLowEnergyCharacteristic::Unknown;
 }
 QLowEnergyService* LowEnergyAdapter::findServiceOfCharacteristic(const QString &uuid)
 {
-
-
     if(UUID2ParentService.contains(uuid))
         return UUID2ParentService[uuid];
     else
         return nullptr;
 }
+QLowEnergyCharacteristic LowEnergyAdapter::findCharacteristicObject(const QString &uuid)
+{
+    if(UUID2Charact.contains(uuid))
+        return UUID2Charact[uuid];
+    else
+        return QLowEnergyCharacteristic();
+}
 QString LowEnergyAdapter::readCharacteristic(const QString &uuid)
 {
     QLowEnergyService* serv = findServiceOfCharacteristic(uuid);
+    QLowEnergyCharacteristic c = findCharacteristicObject(uuid);
 
-    for(auto& c : serv->characteristics())
+    if(c.uuid().toString(QUuid::WithoutBraces) != "00000000-0000-0000-0000-000000000000")
     {
-        if(c.uuid().toString(QUuid::WithoutBraces) == uuid)
+        if( c.properties() & QLowEnergyCharacteristic::Read)
         {
-            //reading if it holds the permission
-            if( c.properties() & QLowEnergyCharacteristic::Read)
-            {
-                serv->readCharacteristic(c);
-                return c.value().toHex(' ');
-            }
-            else
-            {
-                qDebug() << "[READch]\tProperty Prohibited";
-                return "";
-            }
+            serv->readCharacteristic(c);
+            return c.value().toHex(' ');
+        }
+        else
+        {
+            qDebug() << "[READch]\tProperty Prohibited";
+            return "";
         }
     }
-
-    qDebug() << "[READch]\tcharacteristic not found";
-    return "";
+    else
+    {
+        qDebug() << "[READch]\tcharacteristic not found";
+        return "";
+    }
 }
 void LowEnergyAdapter::writeCharacteristic(const QString &uuid,const QByteArray &ba)
 {
     QLowEnergyService* serv = findServiceOfCharacteristic(uuid);
+    QLowEnergyCharacteristic c = findCharacteristicObject(uuid);
 
-    for(auto& c : serv->characteristics())
+    if(c.uuid().toString(QUuid::WithoutBraces) != "00000000-0000-0000-0000-000000000000")
     {
-        if(c.uuid().toString(QUuid::WithoutBraces) == uuid)
+        if( ba.size() == c.value().size())
         {
-            if( ba.size() == c.value().size())
-            {
-                //writing if it holds the permission
-                if(c.properties() & QLowEnergyCharacteristic::Write)
-                    serv->writeCharacteristic(c,ba);
-                else
-                    qDebug() << "[WRITEch]\tProperty Prohibited";
-
-            }
+            //writing if it holds the permission
+            if(c.properties() & QLowEnergyCharacteristic::Write)
+                serv->writeCharacteristic(c,ba);
             else
-                qDebug() << "[WRITEch]\tarray size does not match";
+                qDebug() << "[WRITEch]\tProperty Prohibited";
+
         }
+        else
+            qDebug() << "[WRITEch]\tarray size does not match";
     }
+    else
+        qDebug() << "[WRITEch]\tcharacteristic not found";
 }
 void LowEnergyAdapter::enableCharacteristicNotification(const QString &uuid,bool flag)
 {
     QLowEnergyService* serv = findServiceOfCharacteristic(uuid);
+    QLowEnergyCharacteristic c = findCharacteristicObject(uuid);
 
-    for(auto& c : serv->characteristics())
+    if(c.uuid().toString(QUuid::WithoutBraces) != "00000000-0000-0000-0000-000000000000")
     {
-        if(c.uuid().toString(QUuid::WithoutBraces) == uuid)
+        auto cccd = c.clientCharacteristicConfiguration();
+        if(cccd.isValid())
         {
-            auto cccd = c.clientCharacteristicConfiguration();
-            if(cccd.isValid())
-            {
-                if(flag)                    //flag=true : enable
-                    serv->writeDescriptor(cccd,QLowEnergyCharacteristic::CCCDEnableNotification);
-                else
-                    serv->writeDescriptor(cccd,QLowEnergyCharacteristic::CCCDDisable);
-            }
+            if(flag)                    //flag=true : enable
+                serv->writeDescriptor(cccd,QLowEnergyCharacteristic::CCCDEnableNotification);
             else
-                qDebug() << "[SET_NOTIFY]\t fail";
+                serv->writeDescriptor(cccd,QLowEnergyCharacteristic::CCCDDisable);
         }
+        else
+            qDebug() << "[SET_NOTIFY]\t fail";
     }
 }
 void LowEnergyAdapter::enableCharacteristicIndication(const QString &uuid,bool flag)
 {
     QLowEnergyService* serv = findServiceOfCharacteristic(uuid);
+    QLowEnergyCharacteristic c = findCharacteristicObject(uuid);
 
-    for(auto& c : serv->characteristics())
+    if(c.uuid().toString(QUuid::WithoutBraces) != "00000000-0000-0000-0000-000000000000")
     {
-        if(c.uuid().toString(QUuid::WithoutBraces) == uuid)
+        auto cccd = c.clientCharacteristicConfiguration();
+        if(cccd.isValid())
         {
-            auto cccd = c.clientCharacteristicConfiguration();
-            if(cccd.isValid())
-            {
-                if(flag)                    //flag=true : enable
-                    serv->writeDescriptor(cccd,QLowEnergyCharacteristic::CCCDEnableIndication);
-                else
-                    serv->writeDescriptor(cccd,QLowEnergyCharacteristic::CCCDDisable);
-            }
+            if(flag)                    //flag=true : enable
+                serv->writeDescriptor(cccd,QLowEnergyCharacteristic::CCCDEnableIndication);
             else
-                qDebug() << "[SET_INDICAT]\t fail";
+                serv->writeDescriptor(cccd,QLowEnergyCharacteristic::CCCDDisable);
         }
+        else
+            qDebug() << "[SET_INDICAT]\t fail";
     }
 }
 
@@ -295,7 +295,7 @@ void LowEnergyAdapter::onControllerDisconnect()
     {
         //hash
         UUID2ParentService.clear();
-        //UUID2Charact.clear();
+        UUID2Charact.clear();
 
         for(auto &s : Services)
         {
@@ -364,9 +364,9 @@ void LowEnergyAdapter::onServiceStateChange(QLowEnergyService::ServiceState newS
         {
             for(auto& c : s->characteristics())
             {
-                //UUID2Charact[c.uuid().toString()] = c;
                 //insert the mapping form [uuid string] to [service pointer] into hash
                 UUID2ParentService[c.uuid().toString(QUuid::WithoutBraces)] = s;
+                UUID2Charact[c.uuid().toString(QUuid::WithoutBraces)] = c;
             }
         }
 
