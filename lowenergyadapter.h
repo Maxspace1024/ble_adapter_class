@@ -35,6 +35,7 @@ public:
 
     // check the discovery of searching all characteristics in each service
     bool isAllDetailFinished();
+
 private:
     QObject* _parent;
 
@@ -65,6 +66,7 @@ private slots:
     void onServiceCharacteristicChange(QLowEnergyCharacteristic,QByteArray);
     void onServiceCharacteristicRead(QLowEnergyCharacteristic,QByteArray);
     void onServiceCharacteristicWritten(QLowEnergyCharacteristic,QByteArray);
+
 signals:
 
 };

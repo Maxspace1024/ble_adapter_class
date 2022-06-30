@@ -38,6 +38,7 @@ LowEnergyAdapter::~LowEnergyAdapter()
 
 void LowEnergyAdapter::startScan(int discoveryTimeout)
 {
+    peripheralDevices.clear();
     agent->setLowEnergyDiscoveryTimeout(discoveryTimeout);
 
     //prevent double scan
@@ -120,7 +121,7 @@ void LowEnergyAdapter::disconnectFromDevice()
         //list
         Services.clear();
         UUIDServices.clear();
-        peripheralDevices.clear();
+
 
         controller->disconnectFromDevice();             //disconnect from peripheral device
         controller->disconnect();                       //disconnect SIGNALS AND SLOTS
@@ -147,10 +148,7 @@ QLowEnergyCharacteristic::PropertyTypes LowEnergyAdapter::getCharacteristicPrope
 }
 QLowEnergyService* LowEnergyAdapter::findServiceOfCharacteristic(const QString &uuid)
 {
-    /*
-    for(auto& x : UUID2ParentService.keys())
-        qDebug() << x;
-    */
+
 
     if(UUID2ParentService.contains(uuid))
         return UUID2ParentService[uuid];
@@ -307,7 +305,6 @@ void LowEnergyAdapter::onControllerDisconnect()
         //list
         Services.clear();
         UUIDServices.clear();
-        peripheralDevices.clear();
 
         controller->disconnect();
         delete controller;
@@ -352,6 +349,8 @@ void LowEnergyAdapter::onControllerDiscoveryServicesFinish()
     }
 }
 
+// SLOTS    SERVICE
+//
 void LowEnergyAdapter::onServiceStateChange(QLowEnergyService::ServiceState newState)
 {
     if(newState == QLowEnergyService::RemoteServiceDiscovered)
