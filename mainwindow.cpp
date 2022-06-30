@@ -77,3 +77,27 @@ void MainWindow::on_readBtn_clicked()
     ui->RvalueLabel->setText("Rvalue:" + val);
 }
 
+
+void MainWindow::on_propertiesBtn_clicked()
+{
+    qDebug() << adapter->getCharacteristicProperties( ui->uuidLE->text() );
+}
+
+
+void MainWindow::on_notifEnableBtn_clicked()
+{
+    adapter->enableCharacteristicNotification(
+        ui->uuidLE->text(),
+        true
+    );
+}
+
+
+void MainWindow::on_notifDisableBtn_clicked()
+{
+    adapter->enableCharacteristicNotification(
+        ui->uuidLE->text(),
+        false
+    );
+}
+

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>601</width>
-    <height>356</height>
+    <width>608</width>
+    <height>383</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -192,13 +192,52 @@
      <string>read</string>
     </property>
    </widget>
+   <widget class="QPushButton" name="propertiesBtn">
+    <property name="geometry">
+     <rect>
+      <x>420</x>
+      <y>290</y>
+      <width>121</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>properties</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="notifEnableBtn">
+    <property name="geometry">
+     <rect>
+      <x>60</x>
+      <y>290</y>
+      <width>91</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Notif_Enable</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="notifDisableBtn">
+    <property name="geometry">
+     <rect>
+      <x>160</x>
+      <y>290</y>
+      <width>91</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Notif_Disable</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>601</width>
+     <width>608</width>
      <height>21</height>
     </rect>
    </property>

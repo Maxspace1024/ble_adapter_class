@@ -10,18 +10,29 @@ class LowEnergyAdapter : public QObject
 {
     Q_OBJECT
 public:
+    //inherit from QObject, has SIGNAL & SLOT method
     explicit LowEnergyAdapter(QObject *parent = nullptr);
     ~LowEnergyAdapter();
 
+    // scanning the peripheral devices
     void startScan(int discoveryTimeout);       // milli-second
     void stopScan();
     void showDevices();
+
+    // connection
     void connectToDevice(int index);
     void disconnectFromDevice();
 
+    // the I/O of Characteristic
+    QLowEnergyCharacteristic::PropertyTypes getCharacteristicProperties(const QString &);
     QLowEnergyService* findServiceOfCharacteristic(const QString &);
     QString readCharacteristic(const QString &);
     void writeCharacteristic(const QString &,const QByteArray &);
+    void enableCharacteristicNotification(const QString &,bool);
+    void enableCharacteristicIndication(const QString &,bool);
+
+    // check the discovery of searching all characteristics in each service
+    bool isAllDetailFinished();
 private:
     QObject* _parent;
 
@@ -37,9 +48,6 @@ private:
 
     QHash< QString , QLowEnergyService* > UUID2ParentService;
     //QHash< QString , QLowEnergyCharacteristic > UUID2Charact;
-
-    bool isAllDetailFinished();
-
 private slots:
     void onScanFinish();
     void onScanCancel();

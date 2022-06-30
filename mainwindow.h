@@ -35,6 +35,12 @@ private slots:
 
     void on_readBtn_clicked();
 
+    void on_propertiesBtn_clicked();
+
+    void on_notifEnableBtn_clicked();
+
+    void on_notifDisableBtn_clicked();
+
 private:
     Ui::MainWindow *ui;
 };

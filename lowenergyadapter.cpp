@@ -13,7 +13,8 @@ LowEnergyAdapter::LowEnergyAdapter(QObject *parent) : QObject(parent)
     connect(agent,
             SIGNAL(deviceDiscovered(QBluetoothDeviceInfo)),
             this,
-            SLOT(onDeviceDiscover(QBluetoothDeviceInfo)));
+            SLOT(onDeviceDiscover(QBluetoothDeviceInfo))
+    );
     connect(agent,
             SIGNAL(errorOccurred(QBluetoothDeviceDiscoveryAgent::Error)),
             this,
@@ -34,6 +35,7 @@ void LowEnergyAdapter::startScan(int discoveryTimeout)
 {
     agent->setLowEnergyDiscoveryTimeout(discoveryTimeout);
 
+    //prevent double scan
     if(!agent->isActive())
         agent->start(QBluetoothDeviceDiscoveryAgent::LowEnergyMethod);
     else
@@ -45,6 +47,7 @@ void LowEnergyAdapter::stopScan()
 }
 void LowEnergyAdapter::showDevices()
 {
+    //the central device can't show peripheral devices when it is scanning
     if(!agent->isActive())
     {
         int i=0;
@@ -59,10 +62,13 @@ void LowEnergyAdapter::showDevices()
 
 void LowEnergyAdapter::connectToDevice(int index)
 {
+    //init the value of calculating the finished detail Scanning Service
     detailFinishCount=0;
 
+    //controller should be nullptr, means it is available to initialize
     if(0<= index && index < peripheralDevices.size() && controller == nullptr)
     {
+        //select peripheral device, and provide local device address info
         controller = QLowEnergyController::createCentral
         (
             peripheralDevices.at(index),
@@ -101,12 +107,15 @@ void LowEnergyAdapter::disconnectFromDevice()
 
         for(auto &s : Services)
         {
+            // 'cause service is a pointer
+            // it should be free when disconnect from peripheral device
             s->disconnect();
             delete s;
         }
         //list
         Services.clear();
         UUIDServices.clear();
+        peripheralDevices.clear();
 
         controller->disconnectFromDevice();             //disconnect from peripheral device
         controller->disconnect();                       //disconnect SIGNALS AND SLOTS
@@ -118,6 +127,19 @@ void LowEnergyAdapter::disconnectFromDevice()
                  << detailFinishCount << "/" << Services.size();
 }
 
+QLowEnergyCharacteristic::PropertyTypes LowEnergyAdapter::getCharacteristicProperties(const QString &uuid)
+{
+    QLowEnergyService* serv = findServiceOfCharacteristic(uuid);
+
+    for(auto& c : serv->characteristics())
+    {
+        if(c.uuid().toString(QUuid::WithoutBraces) == uuid)
+            return c.properties();
+    }
+
+    qDebug() << "[Property]\tUnknown";
+    return QLowEnergyCharacteristic::Unknown;
+}
 QLowEnergyService* LowEnergyAdapter::findServiceOfCharacteristic(const QString &uuid)
 {
     /*
@@ -130,7 +152,6 @@ QLowEnergyService* LowEnergyAdapter::findServiceOfCharacteristic(const QString &
     else
         return nullptr;
 }
-
 QString LowEnergyAdapter::readCharacteristic(const QString &uuid)
 {
     QLowEnergyService* serv = findServiceOfCharacteristic(uuid);
@@ -139,17 +160,22 @@ QString LowEnergyAdapter::readCharacteristic(const QString &uuid)
     {
         if(c.uuid().toString(QUuid::WithoutBraces) == uuid)
         {
-            serv->readCharacteristic(c);
-
-            return c.value().toHex(' ');
-        }
-        else
-        {
-            qDebug() << "[READch]\tcharacteristic not found";
-            return "";
+            //reading if it holds the permission
+            if( c.properties() & QLowEnergyCharacteristic::Read)
+            {
+                serv->readCharacteristic(c);
+                return c.value().toHex(' ');
+            }
+            else
+            {
+                qDebug() << "[READch]\tProperty Prohibited";
+                return "";
+            }
         }
     }
 
+    qDebug() << "[READch]\tcharacteristic not found";
+    return "";
 }
 void LowEnergyAdapter::writeCharacteristic(const QString &uuid,const QByteArray &ba)
 {
@@ -160,11 +186,65 @@ void LowEnergyAdapter::writeCharacteristic(const QString &uuid,const QByteArray 
         if(c.uuid().toString(QUuid::WithoutBraces) == uuid)
         {
             if( ba.size() == c.value().size())
-                serv->writeCharacteristic(c,ba);
+            {
+                //writing if it holds the permission
+                if(c.properties() & QLowEnergyCharacteristic::Write)
+                    serv->writeCharacteristic(c,ba);
+                else
+                    qDebug() << "[WRITEch]\tProperty Prohibited";
+
+            }
             else
                 qDebug() << "[WRITEch]\tarray size does not match";
         }
     }
+}
+void LowEnergyAdapter::enableCharacteristicNotification(const QString &uuid,bool flag)
+{
+    QLowEnergyService* serv = findServiceOfCharacteristic(uuid);
+
+    for(auto& c : serv->characteristics())
+    {
+        if(c.uuid().toString(QUuid::WithoutBraces) == uuid)
+        {
+            auto cccd = c.clientCharacteristicConfiguration();
+            if(cccd.isValid())
+            {
+                if(flag)                    //flag=true : enable
+                    serv->writeDescriptor(cccd,QLowEnergyCharacteristic::CCCDEnableNotification);
+                else
+                    serv->writeDescriptor(cccd,QLowEnergyCharacteristic::CCCDDisable);
+            }
+            else
+                qDebug() << "[SET_NOTIFY]\t fail";
+        }
+    }
+}
+void LowEnergyAdapter::enableCharacteristicIndication(const QString &uuid,bool flag)
+{
+    QLowEnergyService* serv = findServiceOfCharacteristic(uuid);
+
+    for(auto& c : serv->characteristics())
+    {
+        if(c.uuid().toString(QUuid::WithoutBraces) == uuid)
+        {
+            auto cccd = c.clientCharacteristicConfiguration();
+            if(cccd.isValid())
+            {
+                if(flag)                    //flag=true : enable
+                    serv->writeDescriptor(cccd,QLowEnergyCharacteristic::CCCDEnableIndication);
+                else
+                    serv->writeDescriptor(cccd,QLowEnergyCharacteristic::CCCDDisable);
+            }
+            else
+                qDebug() << "[SET_INDICAT]\t fail";
+        }
+    }
+}
+
+bool LowEnergyAdapter::isAllDetailFinished()
+{
+    return detailFinishCount == Services.size();
 }
 
 
@@ -173,17 +253,19 @@ void LowEnergyAdapter::writeCharacteristic(const QString &uuid,const QByteArray 
 void LowEnergyAdapter::onScanFinish()
 {
     qDebug() << "[AGENT]\tscan finished";
-    peripheralDevices = agent->discoveredDevices();
 }
 void LowEnergyAdapter::onScanCancel()
 {
     qDebug() << "[AGENT]\tscan canceled";
-    peripheralDevices = agent->discoveredDevices();
 }
 void LowEnergyAdapter::onDeviceDiscover(const QBluetoothDeviceInfo &info)
 {
     qDebug() << "[AGENT]\tcatch:"
              << info.name();
+
+    //appen to list when device type is Low Energy
+    if( info.coreConfigurations() == QBluetoothDeviceInfo::LowEnergyCoreConfiguration)
+        peripheralDevices.append(info);
 }
 void LowEnergyAdapter::onAgentErrorOccur(QBluetoothDeviceDiscoveryAgent::Error error)
 {
@@ -195,11 +277,13 @@ void LowEnergyAdapter::onAgentErrorOccur(QBluetoothDeviceDiscoveryAgent::Error e
 void LowEnergyAdapter::onControllerConnect()
 {
     qDebug() << "[CTRLLER]\tConnected";
-    controller->discoverServices();
+    controller->discoverServices();             //discover the service in the peripheral device
 }
 void LowEnergyAdapter::onControllerDisconnect()
 {
     qDebug() << "[CTRLLER]\tdisconnected";
+
+    // clear some member for normally using in the next connection
 
     if( controller->error() ==
         (QLowEnergyController::ConnectionError |
@@ -218,6 +302,7 @@ void LowEnergyAdapter::onControllerDisconnect()
         //list
         Services.clear();
         UUIDServices.clear();
+        peripheralDevices.clear();
 
         controller->disconnect();
         delete controller;
@@ -276,6 +361,7 @@ void LowEnergyAdapter::onServiceStateChange(QLowEnergyService::ServiceState newS
             for(auto& c : s->characteristics())
             {
                 //UUID2Charact[c.uuid().toString()] = c;
+                //insert the mapping form [uuid string] to [service pointer] into hash
                 UUID2ParentService[c.uuid().toString(QUuid::WithoutBraces)] = s;
             }
         }
@@ -284,9 +370,9 @@ void LowEnergyAdapter::onServiceStateChange(QLowEnergyService::ServiceState newS
 }
 void LowEnergyAdapter::onServiceCharacteristicChange(QLowEnergyCharacteristic c,QByteArray val)
 {
-    qDebug()<< "[CH]\t"
+    qDebug()<< "[CH_CHANG]\t"
             << c.uuid().toString()
-            << ":" << val;
+            << ":" << val.toHex(' ');
 }
 void LowEnergyAdapter::onServiceCharacteristicRead(QLowEnergyCharacteristic c,QByteArray val)
 {
@@ -299,12 +385,4 @@ void LowEnergyAdapter::onServiceCharacteristicWritten(QLowEnergyCharacteristic c
     qDebug()<< "[CH_WRITTEN]\t"
             << c.uuid().toString()
             << ":" << newVal;
-}
-
-
-// private method
-//
-bool LowEnergyAdapter::isAllDetailFinished()
-{
-    return detailFinishCount == Services.size();
 }
