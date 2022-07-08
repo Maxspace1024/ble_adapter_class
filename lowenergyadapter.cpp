@@ -65,6 +65,10 @@ void LowEnergyAdapter::showDevices()
     else
         qDebug() << "agent is active";
 }
+bool LowEnergyAdapter::isScanning()
+{
+    return agent->isActive();
+}
 
 void LowEnergyAdapter::connectToDevice(int index)
 {

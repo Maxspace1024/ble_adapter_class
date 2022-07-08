@@ -20,6 +20,7 @@ public:
     void startScan(int discoveryTimeout);       // milli-second
     void stopScan();
     void showDevices();
+    bool isScanning();
 
     // connection
     void connectToDevice(int index);
