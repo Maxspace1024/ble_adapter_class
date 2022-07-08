@@ -29,8 +29,8 @@ public:
     QLowEnergyCharacteristic::PropertyTypes getCharacteristicProperties(const QString &);
     QLowEnergyService* findServiceOfCharacteristic(const QString &);
     QLowEnergyCharacteristic findCharacteristicObject(const QString &);
-    QString readCharacteristic(const QString &);
-    void writeCharacteristic(const QString &,const QByteArray &);
+    QByteArray readCharacteristic(const QString &);
+    void writeCharacteristic(const QString &,const QByteArray &,int);
     void enableCharacteristicNotification(const QString &,bool);
     void enableCharacteristicIndication(const QString &,bool);
 
@@ -70,6 +70,8 @@ private slots:
 
 signals:
     void adapterCharacteristicChange(QLowEnergyService*,const QLowEnergyCharacteristic &);
+    void adapterDiscoverDetailFin(int serviceCount);
+    void adapterDeviceDiscover(const QBluetoothDeviceInfo &);
 };
 
 #endif // LOWENERGYADAPTER_H

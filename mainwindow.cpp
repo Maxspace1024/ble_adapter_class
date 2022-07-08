@@ -68,19 +68,20 @@ void MainWindow::on_writeBtn_clicked()
 {
     adapter->writeCharacteristic(
         ui->uuidLE->text(),
-        QByteArray::fromHex( ui->byteArrLE->text().toLatin1() )         //need .toLatin1()
+        QByteArray::fromHex( ui->byteArrLE->text().toLatin1() ),
+        6//need .toLatin1()
     );
 }
 
 
 void MainWindow::on_readBtn_clicked()
 {
-    QString val =
+    QByteArray val =
     adapter->readCharacteristic(
         ui->uuidLE->text()
     );
 
-    ui->RvalueLabel->setText("Rvalue:" + val);
+    ui->RvalueLabel->setText("Rvalue:" + val.toHex(' '));
 }
 
 

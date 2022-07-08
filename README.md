@@ -12,16 +12,35 @@
     void disconnectFromDevice();
 
     //對characteristic的操作
-    QLowEnergyCharacteristic::PropertyTypes readCharacteristicProperties(const QString &);
+    QLowEnergyCharacteristic::PropertyTypes getCharacteristicProperties(const QString &);
     QLowEnergyService* findServiceOfCharacteristic(const QString &);
-    QString readCharacteristic(const QString &);
-    void writeCharacteristic(const QString &,const QByteArray &);
+    QLowEnergyCharacteristic findCharacteristicObject(const QString &);
+    QByteArray readCharacteristic(const QString &);
+    void writeCharacteristic(const QString &,const QByteArray &,int);
     void enableCharacteristicNotification(const QString &,bool);
     void enableCharacteristicIndication(const QString &,bool);
 
     //檢測是否掃描完成所有Service中的Characteristic
     bool LowEnergyAdapter::isAllDetailFinished()
     ```
+
+
+## 20220708
+* 在`LowEnergyAdapter`中的signal`adapterCharacteristicChange(QLowEnergyService*,const QLowEnergyCharacteristic &)`
+  * 此寫法破壞Encapsulation，內部資料外洩
+  * Service & Characteristic 應該設為private，外部必須無法讀取
+  - [ ] 或許改成回傳(UUID_STRING,QByteArray)
+* 增加signal告知掃描Service內部完成了
+* `writeCharacteristic()`增加count參數(parameter)，用來truncat QByteArray
+  * 有限數量的寫入
+* `readCharacteristic()`修改回傳型態
+  * ~~QString~~
+  * QByteArray
+* 阻止掃描時期的錯誤操作
+  * read
+  * write
+  * enableNotification
+  * enableIndication
 
 ## 20220630晚上
 * 抓到戰犯，記得匯入標頭
@@ -52,7 +71,7 @@
     * ~~characteristicChanged~~
 - [X] 需增加檢測Characteristic Property的method
 - [X] Notification的功能需要研究
-- [ ] 當Service掃描完成(serv->discoverDetail())，`detailFinishCount`的數值會加一
+- [X] 當Service掃描完成(serv->discoverDetail())，`detailFinishCount`的數值會加一
   * 用來判斷所有Service是否抓到自己的Characteristics
   * 這應該不是個好方法，在stateChange中可能還會發生其他狀態
   * 這些"其他狀態"還沒有處理的方法與步驟
@@ -74,9 +93,60 @@
     }
     ```
 * WRITE_btn 需寫入長度相同的ByteArray & READ_btn 的讀取限制
-  - [ ] 尚未完成Service詳細掃描前，此功能無效
-  - [ ] 有write_respone的欄位需要增加
+  - [X] 尚未完成Service詳細掃描前，此功能無效
+  - [X] 有write_respone的欄位需要增加
 * Hash member 會出現heap動態記憶體位置問題
   ```
   HEAP[bledevclass.exe]: Heap block at 000002857A9DC500 modified at 000002857A9DC5CC past requested size of bc
   ```
+
+* * *
+* * * 
+## QBluetoothDeviceDiscoveryAgent
+* 最基礎的函數，用來尋找周圍的藍牙裝置
+
+<br/>
+
+### *__METHODS__*
+* **setLowEnergyDiscoveryTimeout( int timeout )**
+    * 設定LE搜尋時間長度
+* **start()**
+    * 開始搜尋周圍裝置
+    * 設定搜尋裝置型態
+**stop()**
+    * 終止搜尋裝置
+
+### *__SIGNAL__*
+* **canceled()**
+    * 當使用`stop()會發出此信號
+* **finished()**
+    * 當timeout的時候會發出此信號
+* **deviceDiscovered(const QBluetoothDevice &device)**
+    * 偵測到裝置發出此信號
+```c
+//agent is a pointer
+agent = new QBluetoothDeviceDiscoveryAgent(this);
+agent->setLowEnergyTimeout(10000);
+agent->start()
+```
+
+* * *
+## QBluetoothDeviceInfo
+* 儲存裝置資訊
+* * *
+## QBluetoothLocalDevice
+* 儲存本地裝置資訊
+* * *
+## QLowEnergyController
+* 用來建立LowEnergy連線
+
+### *__METHODS__*
+* **QLowEnergyController::createCentral( *REMOTE_DEVICE*, *LOCAL_ADDRESS*, *PARENT*)**
+    * return a pointer
+* **connectToDevice()**
+    * 連線至remote device
+* * *
+## QLowEnergyService
+* 需使用 `QLowEnergyController::createServiceObject()` 建立service
+* `discoverDetails()`掃描所有Characteristic
+  

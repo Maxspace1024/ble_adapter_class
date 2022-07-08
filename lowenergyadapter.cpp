@@ -160,8 +160,18 @@ QLowEnergyCharacteristic LowEnergyAdapter::findCharacteristicObject(const QStrin
     else
         return QLowEnergyCharacteristic();
 }
-QString LowEnergyAdapter::readCharacteristic(const QString &uuid)
+QByteArray LowEnergyAdapter::readCharacteristic(const QString &uuid)
 {
+    QByteArray err;
+    err = 0;
+
+    if(!isAllDetailFinished())
+    {
+        // 防呆
+        qDebug() << "[READch]\t detail discovery does not finish";
+        return err;
+    }
+
     QLowEnergyService* serv = findServiceOfCharacteristic(uuid);
     QLowEnergyCharacteristic c = findCharacteristicObject(uuid);
 
@@ -170,22 +180,32 @@ QString LowEnergyAdapter::readCharacteristic(const QString &uuid)
         if( c.properties() & QLowEnergyCharacteristic::Read)
         {
             serv->readCharacteristic(c);
-            return c.value().toHex(' ');
+            return c.value();
         }
         else
         {
             qDebug() << "[READch]\tProperty Prohibited";
-            return "";
+            return err;
         }
     }
     else
     {
         qDebug() << "[READch]\tcharacteristic not found";
-        return "";
+        return err;
     }
 }
-void LowEnergyAdapter::writeCharacteristic(const QString &uuid,const QByteArray &ba)
+void LowEnergyAdapter::writeCharacteristic(const QString &uuid,const QByteArray &ba,int count)
 {
+    if(!isAllDetailFinished())
+    {
+        // 防呆
+        qDebug() << "[WRITEch]\t detail discovery does not finish";
+        return;
+    }
+
+    if(ba.size()<count || count<0)
+        count = ba.size();
+
     QLowEnergyService* serv = findServiceOfCharacteristic(uuid);
     QLowEnergyCharacteristic c = findCharacteristicObject(uuid);
 
@@ -195,7 +215,7 @@ void LowEnergyAdapter::writeCharacteristic(const QString &uuid,const QByteArray 
         {
             //writing if it holds the permission
             if(c.properties() & QLowEnergyCharacteristic::Write)
-                serv->writeCharacteristic(c,ba);
+                serv->writeCharacteristic(c,ba.first(count));
             else
                 qDebug() << "[WRITEch]\tProperty Prohibited";
 
@@ -208,6 +228,13 @@ void LowEnergyAdapter::writeCharacteristic(const QString &uuid,const QByteArray 
 }
 void LowEnergyAdapter::enableCharacteristicNotification(const QString &uuid,bool flag)
 {
+    if(!isAllDetailFinished())
+    {
+        // 防呆
+        qDebug() << "[enableNotif]\t detail discovery does not finish";
+        return;
+    }
+
     QLowEnergyService* serv = findServiceOfCharacteristic(uuid);
     QLowEnergyCharacteristic c = findCharacteristicObject(uuid);
 
@@ -227,6 +254,13 @@ void LowEnergyAdapter::enableCharacteristicNotification(const QString &uuid,bool
 }
 void LowEnergyAdapter::enableCharacteristicIndication(const QString &uuid,bool flag)
 {
+    if(!isAllDetailFinished())
+    {
+        // 防呆
+        qDebug() << "[enableIndicat]\t detail discovery does not finish";
+        return;
+    }
+
     QLowEnergyService* serv = findServiceOfCharacteristic(uuid);
     QLowEnergyCharacteristic c = findCharacteristicObject(uuid);
 
@@ -244,7 +278,6 @@ void LowEnergyAdapter::enableCharacteristicIndication(const QString &uuid,bool f
             qDebug() << "[SET_INDICAT]\t fail";
     }
 }
-
 bool LowEnergyAdapter::isAllDetailFinished()
 {
     return detailFinishCount == Services.size();
@@ -263,12 +296,14 @@ void LowEnergyAdapter::onScanCancel()
 }
 void LowEnergyAdapter::onDeviceDiscover(const QBluetoothDeviceInfo &info)
 {
-    qDebug() << "[AGENT]\tcatch:"
-             << info.name();
-
     //appen to list when device type is Low Energy
     if( info.coreConfigurations() == QBluetoothDeviceInfo::LowEnergyCoreConfiguration)
+    {
+        qDebug() << "[AGENT]\tcatch:"
+                 << info.name();
         peripheralDevices.append(info);
+        adapterDeviceDiscover(info);
+    }
 }
 void LowEnergyAdapter::onAgentErrorOccur(QBluetoothDeviceDiscoveryAgent::Error error)
 {
@@ -356,10 +391,11 @@ void LowEnergyAdapter::onServiceStateChange(QLowEnergyService::ServiceState newS
     if(newState == QLowEnergyService::RemoteServiceDiscovered)
         detailFinishCount++;
 
-    if( isAllDetailFinished() )
+    if( isAllDetailFinished() && newState != QLowEnergyService::InvalidService)
     {
         qDebug() << "[CTRLLER]\tall detail has been discovered";
 
+        // make a mapping from UUID_STRING -> INSTANCE
         for(auto& s : Services)
         {
             for(auto& c : s->characteristics())
@@ -370,6 +406,8 @@ void LowEnergyAdapter::onServiceStateChange(QLowEnergyService::ServiceState newS
             }
         }
 
+        // send signal that means discovery is done
+        emit adapterDiscoverDetailFin(detailFinishCount);
     }
 }
 void LowEnergyAdapter::onServiceCharacteristicChange(QLowEnergyCharacteristic c,QByteArray val)
@@ -377,6 +415,9 @@ void LowEnergyAdapter::onServiceCharacteristicChange(QLowEnergyCharacteristic c,
     qDebug()<< "[CH_CHANG] "
             << c.uuid().toString()
             << ":" << val.toHex(' ');
+
+    // 照理來說，Service & Characteristic都是private
+    // 不應該回傳這些實體
     QLowEnergyService* serv = findServiceOfCharacteristic(c.uuid().toString(QUuid::WithoutBraces));
     emit adapterCharacteristicChange(serv,c);
 }
