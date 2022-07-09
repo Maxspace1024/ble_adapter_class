@@ -5,6 +5,7 @@
 #include <QLowEnergyService>
 #include <QLowEnergyCharacteristic>
 #include <QLowEnergyController>
+#include <QBluetoothAddress>
 #include <QBluetoothLocalDevice>
 #include <QBluetoothDeviceDiscoveryAgent>
 
@@ -25,6 +26,7 @@ public:
     // connection
     void connectToDevice(int index);
     void disconnectFromDevice();
+    QString getRemoteMacAddress();
 
     // the I/O of Characteristic
     QLowEnergyCharacteristic::PropertyTypes getCharacteristicProperties(const QString &);
@@ -63,6 +65,7 @@ private slots:
     void onControllerDisconnect();
     void onControllerDiscoveryServicesFinish();
     void onControllerErrorOccur(QLowEnergyController::Error);
+    void onControllerStateChanged(QLowEnergyController::ControllerState);
 
     void onServiceStateChange(QLowEnergyService::ServiceState);
     void onServiceCharacteristicChange(QLowEnergyCharacteristic,QByteArray);
@@ -70,9 +73,10 @@ private slots:
     void onServiceCharacteristicWritten(QLowEnergyCharacteristic,QByteArray);
 
 signals:
-    void adapterCharacteristicChange(QLowEnergyService*,const QLowEnergyCharacteristic &);
-    void adapterDiscoverDetailFin(int serviceCount);
-    void adapterDeviceDiscover(const QBluetoothDeviceInfo &);
+    void adapterCharacteristicChanged(const QString,QByteArray);
+    void adapterDiscoverDetailFinished(int serviceCount);
+    void adapterDeviceDiscovered(const QBluetoothDeviceInfo &);
+    void adapterConnectionStateChanged(QLowEnergyController::ControllerState);
 };
 
 #endif // LOWENERGYADAPTER_H

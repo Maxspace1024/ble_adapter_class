@@ -63,7 +63,7 @@ void LowEnergyAdapter::showDevices()
         qDebug() << "\n";
     }
     else
-        qDebug() << "agent is active";
+        qDebug() << "[AGENT]\tagent is active";
 }
 bool LowEnergyAdapter::isScanning()
 {
@@ -72,6 +72,12 @@ bool LowEnergyAdapter::isScanning()
 
 void LowEnergyAdapter::connectToDevice(int index)
 {
+    if(agent->isActive())
+    {
+        qDebug() << "[AGENT]\tagent is active";
+        return;
+    }
+
     //controller should be nullptr, means it is available to initialize
     if(0<= index && index < peripheralDevices.size() && controller == nullptr)
     {
@@ -92,6 +98,11 @@ void LowEnergyAdapter::connectToDevice(int index)
                 SIGNAL(errorOccurred(QLowEnergyController::Error)),
                 this,
                 SLOT(onControllerErrorOccur(QLowEnergyController::Error))
+        );
+        connect(controller,
+                SIGNAL(stateChanged(QLowEnergyController::ControllerState)),
+                this,
+                SLOT(onControllerStateChanged(QLowEnergyController::ControllerState))
         );
         controller->connectToDevice();
     }
@@ -136,10 +147,21 @@ void LowEnergyAdapter::disconnectFromDevice()
         qDebug() << "[AGENT]\tdisconnect fail 'cause not all detail has been discover"
                  << detailFinishCount << "/" << Services.size();
 }
+QString LowEnergyAdapter::getRemoteMacAddress()
+{
+    if(controller==nullptr || controller->state() != QLowEnergyController::ConnectedState)
+    {
+        qDebug() << "[getMAC]\t ctrller is invalid";
+        //return "N/A";
+        return QBluetoothAddress().toString();
+    }
+    else
+        return controller->remoteAddress().toString();
+}
 
 QLowEnergyCharacteristic::PropertyTypes LowEnergyAdapter::getCharacteristicProperties(const QString &uuid)
 {
-    QLowEnergyService* serv = findServiceOfCharacteristic(uuid);
+    //QLowEnergyService* serv = findServiceOfCharacteristic(uuid);
     QLowEnergyCharacteristic c = findCharacteristicObject(uuid);
 
     if(c.uuid().toString(QUuid::WithoutBraces) != "00000000-0000-0000-0000-000000000000")
@@ -306,7 +328,7 @@ void LowEnergyAdapter::onDeviceDiscover(const QBluetoothDeviceInfo &info)
         qDebug() << "[AGENT]\tcatch:"
                  << info.name();
         peripheralDevices.append(info);
-        adapterDeviceDiscover(info);
+        emit adapterDeviceDiscovered(info);
     }
 }
 void LowEnergyAdapter::onAgentErrorOccur(QBluetoothDeviceDiscoveryAgent::Error error)
@@ -379,13 +401,24 @@ void LowEnergyAdapter::onControllerDiscoveryServicesFinish()
             serv,
             SIGNAL(characteristicRead(QLowEnergyCharacteristic,QByteArray)),
             this,
-            SLOT(onServiceCharacteristicChange(QLowEnergyCharacteristic,QByteArray))
+            SLOT(onServiceCharacteristicRead(QLowEnergyCharacteristic,QByteArray))
+        );
+        connect(
+            serv,
+            SIGNAL(characteristicWritten(QLowEnergyCharacteristic,QByteArray)),
+            this,
+            SLOT(onServiceCharacteristicWritten(QLowEnergyCharacteristic,QByteArray))
         );
         serv->discoverDetails();
 
 
         qDebug() << "[CTRLLER]\t" << u;
     }
+}
+void LowEnergyAdapter::onControllerStateChanged(QLowEnergyController::ControllerState state)
+{
+    qDebug() << "[CTRLLER_STAT]\t" << state;
+    emit adapterConnectionStateChanged(state);
 }
 
 // SLOTS    SERVICE
@@ -411,7 +444,7 @@ void LowEnergyAdapter::onServiceStateChange(QLowEnergyService::ServiceState newS
         }
 
         // send signal that means discovery is done
-        emit adapterDiscoverDetailFin(detailFinishCount);
+        emit adapterDiscoverDetailFinished(detailFinishCount);
     }
 }
 void LowEnergyAdapter::onServiceCharacteristicChange(QLowEnergyCharacteristic c,QByteArray val)
@@ -422,18 +455,23 @@ void LowEnergyAdapter::onServiceCharacteristicChange(QLowEnergyCharacteristic c,
 
     // 照理來說，Service & Characteristic都是private
     // 不應該回傳這些實體
-    QLowEnergyService* serv = findServiceOfCharacteristic(c.uuid().toString(QUuid::WithoutBraces));
-    emit adapterCharacteristicChange(serv,c);
+    //QLowEnergyService* serv = findServiceOfCharacteristic(c.uuid().toString(QUuid::WithoutBraces));
+    //emit adapterCharacteristicChange(serv,c);
+
+    emit adapterCharacteristicChanged(
+        c.uuid().toString(QUuid::WithoutBraces),
+        c.value()
+    );
 }
 void LowEnergyAdapter::onServiceCharacteristicRead(QLowEnergyCharacteristic c,QByteArray val)
 {
-    qDebug()<< "[CH_READ]\t"
+    qDebug()<< "[CH__READ]\t"
             << c.uuid().toString()
             << ":" << val;
 }
 void LowEnergyAdapter::onServiceCharacteristicWritten(QLowEnergyCharacteristic c,QByteArray newVal)
 {
-    qDebug()<< "[CH_WRITTEN]\t"
+    qDebug()<< "[CH_WRITTEN]"
             << c.uuid().toString()
             << ":" << newVal;
 }

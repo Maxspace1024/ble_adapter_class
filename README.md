@@ -6,10 +6,12 @@
     void startScan(int discoveryTimeout);       // milli-second
     void stopScan();
     void showDevices();
+    bool isScanning();
 
     //連線
     void connectToDevice(int index);
     void disconnectFromDevice();
+    QString getRemoteMacAddress();
 
     //對characteristic的操作
     QLowEnergyCharacteristic::PropertyTypes getCharacteristicProperties(const QString &);
@@ -24,6 +26,12 @@
     bool LowEnergyAdapter::isAllDetailFinished()
     ```
 
+## 20220710
+* LowEnergyAdapter新建method
+  - [X] mac device
+  - [X] agent status
+  - [X] connectToDevice 要防呆
+  - [X] `onServiceCharacteristicChange()` modify the parameter of function signature
 
 ## 20220708
 * 在`LowEnergyAdapter`中的signal`adapterCharacteristicChange(QLowEnergyService*,const QLowEnergyCharacteristic &)`
