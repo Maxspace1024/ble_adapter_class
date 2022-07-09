@@ -149,7 +149,7 @@ void LowEnergyAdapter::disconnectFromDevice()
 }
 QString LowEnergyAdapter::getRemoteMacAddress()
 {
-    if(controller==nullptr || controller->state() != QLowEnergyController::ConnectedState)
+    if(controller==nullptr)
     {
         qDebug() << "[getMAC]\t ctrller is invalid";
         //return "N/A";
@@ -237,17 +237,21 @@ void LowEnergyAdapter::writeCharacteristic(const QString &uuid,const QByteArray 
 
     if(c.uuid().toString(QUuid::WithoutBraces) != "00000000-0000-0000-0000-000000000000")
     {
-        if( ba.size() == c.value().size())
+        //writing if it holds the permission
+        if(c.properties() & QLowEnergyCharacteristic::Write)
+            serv->writeCharacteristic(c,ba.first(count));
+        else
+            qDebug() << "[WRITEch]\tProperty Prohibited";
+        
+        /*
+        if( ba.size() <= c.value().size())
         {
-            //writing if it holds the permission
-            if(c.properties() & QLowEnergyCharacteristic::Write)
-                serv->writeCharacteristic(c,ba.first(count));
-            else
-                qDebug() << "[WRITEch]\tProperty Prohibited";
+            
 
         }
         else
             qDebug() << "[WRITEch]\tarray size does not match";
+        */
     }
     else
         qDebug() << "[WRITEch]\tcharacteristic not found";
@@ -465,13 +469,13 @@ void LowEnergyAdapter::onServiceCharacteristicChange(QLowEnergyCharacteristic c,
 }
 void LowEnergyAdapter::onServiceCharacteristicRead(QLowEnergyCharacteristic c,QByteArray val)
 {
-    qDebug()<< "[CH__READ]\t"
+    qDebug()<< "[CH__READ] "
             << c.uuid().toString()
             << ":" << val;
 }
 void LowEnergyAdapter::onServiceCharacteristicWritten(QLowEnergyCharacteristic c,QByteArray newVal)
 {
-    qDebug()<< "[CH_WRITTEN]"
+    qDebug()<< "[CH_WRITEN]"
             << c.uuid().toString()
             << ":" << newVal;
 }
