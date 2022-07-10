@@ -32,6 +32,7 @@
   - [X] agent status
   - [X] connectToDevice 要防呆
   - [X] `onServiceCharacteristicChange()` modify the parameter of function signature
+* 增加進度條
 
 ## 20220708
 * 在`LowEnergyAdapter`中的signal`adapterCharacteristicChange(QLowEnergyService*,const QLowEnergyCharacteristic &)`

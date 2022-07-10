@@ -308,6 +308,10 @@ void LowEnergyAdapter::enableCharacteristicIndication(const QString &uuid,bool f
             qDebug() << "[SET_INDICAT]\t fail";
     }
 }
+int LowEnergyAdapter::getServiceSize()
+{
+    return Services.size();
+}
 bool LowEnergyAdapter::isAllDetailFinished()
 {
     return detailFinishCount == Services.size();
@@ -430,7 +434,10 @@ void LowEnergyAdapter::onControllerStateChanged(QLowEnergyController::Controller
 void LowEnergyAdapter::onServiceStateChange(QLowEnergyService::ServiceState newState)
 {
     if(newState == QLowEnergyService::RemoteServiceDiscovered)
+    {
         detailFinishCount++;
+        emit adapterServiceDetailDiscovered(detailFinishCount);
+    }
 
     if( isAllDetailFinished() && newState != QLowEnergyService::InvalidService)
     {

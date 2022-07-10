@@ -36,6 +36,7 @@ public:
     void writeCharacteristic(const QString &,const QByteArray &,int);
     void enableCharacteristicNotification(const QString &,bool);
     void enableCharacteristicIndication(const QString &,bool);
+    int getServiceSize();
 
     // check the discovery of searching all characteristics in each service
     bool isAllDetailFinished();
@@ -77,6 +78,7 @@ signals:
     void adapterDiscoverDetailFinished(int serviceCount);
     void adapterDeviceDiscovered(const QBluetoothDeviceInfo &);
     void adapterConnectionStateChanged(QLowEnergyController::ControllerState);
+    void adapterServiceDetailDiscovered(int);
 };
 
 #endif // LOWENERGYADAPTER_H
